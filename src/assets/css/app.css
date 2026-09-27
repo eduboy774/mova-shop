@@ -1,0 +1,58 @@
+@import 'tailwind.css';
+
+/* ---------- MOVA additions ---------- */
+.sidebar .nav-item > a.active svg {
+    color: #7209b7 !important;
+}
+.dark .sidebar .nav-item > a.active svg {
+    color: #b983e6 !important;
+}
+
+/* Receipt printing: when body has .print-receipt, only the .receipt element is printed. */
+@media print {
+    @page {
+        margin: 4mm;
+    }
+    body {
+        background: #fff !important;
+    }
+    setting,
+    .screen_loader {
+        display: none !important;
+    }
+    .main-container .main-content {
+        margin: 0 !important;
+    }
+    body.print-receipt * {
+        visibility: hidden !important;
+    }
+    body.print-receipt .receipt,
+    body.print-receipt .receipt * {
+        visibility: visible !important;
+        color: #000 !important;
+    }
+    /* 72mm = printable width of a standard 80mm thermal roll; also fits A4/Letter */
+    body.print-receipt .receipt {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-width: 72mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        background: #fff !important;
+    }
+}
+
+/* Grid/flex children default to min-width:auto, which lets wide tables push the page sideways on phones. */
+.panel {
+    min-width: 0;
+}
+
+/* Absolutely positioned children (e.g. .sr-only column labels) escape a non-positioned scroll box,
+   which made wide tables push the whole page sideways on phones. */
+.table-responsive {
+    position: relative;
+}

@@ -1,0 +1,205 @@
+<div>
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-black dark:text-white-light">{{ greeting }}, {{ auth.user()?.name }}</h1>
+            <p class="text-white-dark">Here is how your shop is doing today.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a routerLink="/products/new" class="btn btn-outline-primary btn-sm gap-1.5"><icon-plus class="h-4 w-4" /> Add product</a>
+            <a routerLink="/pos" class="btn btn-primary btn-sm gap-1.5"><icon-shopping-cart class="h-4 w-4" /> Open POS</a>
+        </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="panel h-full bg-gradient-to-r from-[#7209b7] to-[#b5179e] !text-white">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-semibold opacity-90">Today's sales</p>
+                    <p class="mt-2 text-2xl font-extrabold">{{ today().grossSales | money }}</p>
+                </div>
+                <span class="grid h-11 w-11 place-content-center rounded-full bg-white/20"><icon-cash-banknotes class="h-5 w-5" /></span>
+            </div>
+            <p class="mt-4 text-xs opacity-90">
+                {{ today().orders }} {{ today().orders === 1 ? 'order' : 'orders' }} · @if (todayChange() !== null) {
+                <span class="font-bold">{{ todayChange()! > 0 ? '▲' : todayChange()! < 0 ? '▼' : '' }} {{ todayChange() | number: '1.0-1' }}%</span> vs
+                yesterday } @else { no sales yesterday }
+            </p>
+        </div>
+
+        <div class="panel h-full bg-gradient-to-r from-[#0077b6] to-[#00b4d8] !text-white">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-semibold opacity-90">Sales this month</p>
+                    <p class="mt-2 text-2xl font-extrabold">{{ month().grossSales | money }}</p>
+                </div>
+                <span class="grid h-11 w-11 place-content-center rounded-full bg-white/20"><icon-trending-up class="h-5 w-5" /></span>
+            </div>
+            <p class="mt-4 text-xs opacity-90">
+                {{ month().orders }} {{ month().orders === 1 ? 'order' : 'orders' }} · @if (monthChange() !== null) {
+                <span class="font-bold">{{ monthChange()! > 0 ? '▲' : monthChange()! < 0 ? '▼' : '' }} {{ monthChange() | number: '1.0-1' }}%</span> vs same
+                days last month } @else { first month of sales }
+            </p>
+        </div>
+
+        <div class="panel h-full bg-gradient-to-r from-[#f72585] to-[#ff6fa8] !text-white">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-semibold opacity-90">Gross profit this month</p>
+                    <p class="mt-2 text-2xl font-extrabold">{{ month().profit | money }}</p>
+                </div>
+                <span class="grid h-11 w-11 place-content-center rounded-full bg-white/20 text-lg font-extrabold">%</span>
+            </div>
+            <p class="mt-4 text-xs opacity-90">
+                {{ margin() | number: '1.0-1' }}% margin @if (profitChange() !== null) { ·
+                <span class="font-bold">{{ profitChange()! > 0 ? '▲' : profitChange()! < 0 ? '▼' : '' }} {{ profitChange() | number: '1.0-1' }}%</span>
+                }
+            </p>
+        </div>
+
+        <div class="panel h-full bg-gradient-to-r from-[#3b3f5c] to-[#5c5f7e] !text-white">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-semibold opacity-90">Stock value (at cost)</p>
+                    <p class="mt-2 text-2xl font-extrabold">{{ products.stockValue() | money }}</p>
+                </div>
+                <span class="grid h-11 w-11 place-content-center rounded-full bg-white/20"><icon-box class="h-5 w-5" /></span>
+            </div>
+            <p class="mt-4 text-xs opacity-90">
+                {{ products.activeProducts().length }} active products ·
+                <a routerLink="/inventory" class="font-bold underline">{{ products.lowStock().length }} need restocking</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- charts -->
+    <div class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div class="panel h-full xl:col-span-2">
+            <div class="mb-2 flex items-center justify-between">
+                <h2 class="text-lg font-semibold dark:text-white-light">Sales &amp; profit · last 30 days</h2>
+                <a routerLink="/reports" class="text-sm font-semibold text-primary hover:underline">Full report</a>
+            </div>
+            <div class="min-h-[320px] overflow-hidden rounded-lg">
+                <apx-chart
+                    [series]="salesChart().series"
+                    [chart]="salesChart().chart"
+                    [colors]="salesChart().colors"
+                    [dataLabels]="salesChart().dataLabels"
+                    [stroke]="salesChart().stroke"
+                    [fill]="salesChart().fill"
+                    [xaxis]="salesChart().xaxis"
+                    [yaxis]="salesChart().yaxis"
+                    [grid]="salesChart().grid"
+                    [tooltip]="salesChart().tooltip"
+                    [legend]="salesChart().legend"
+                    [theme]="salesChart().theme"
+                />
+            </div>
+        </div>
+
+        <div class="panel h-full">
+            <h2 class="mb-2 text-lg font-semibold dark:text-white-light">Sales by category</h2>
+            @if (categoryChart().hasData) {
+            <apx-chart
+                [series]="categoryChart().series"
+                [chart]="categoryChart().chart"
+                [labels]="categoryChart().labels"
+                [colors]="categoryChart().colors"
+                [dataLabels]="categoryChart().dataLabels"
+                [stroke]="categoryChart().stroke"
+                [legend]="categoryChart().legend"
+                [plotOptions]="categoryChart().plotOptions"
+                [tooltip]="categoryChart().tooltip"
+                [theme]="categoryChart().theme"
+            />
+            } @else {
+            <div class="grid min-h-[320px] place-content-center text-white-dark">No sales this month yet.</div>
+            }
+        </div>
+    </div>
+
+    <!-- tables -->
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div class="panel h-full xl:col-span-2">
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold dark:text-white-light">Recent orders</h2>
+                <a routerLink="/orders" class="text-sm font-semibold text-primary hover:underline">View all</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table-hover">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Payment</th>
+                            <th>Date</th>
+                            <th class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (o of recentOrders(); track o.id) {
+                        <tr>
+                            <td>
+                                <a [routerLink]="['/orders', o.id]" class="font-semibold text-primary hover:underline">{{ o.number }}</a>
+                                @if (o.status === 'refunded') {
+                                <span class="badge badge-outline-danger ltr:ml-1 rtl:mr-1">Refunded</span>
+                                }
+                            </td>
+                            <td class="whitespace-nowrap">{{ o.customerName }}</td>
+                            <td>{{ paymentLabel(o.paymentMethod) }}</td>
+                            <td class="whitespace-nowrap">{{ o.date | date: 'MMM d, HH:mm' }}</td>
+                            <td class="text-right font-semibold">{{ o.total | money }}</td>
+                        </tr>
+                        } @empty {
+                        <tr>
+                            <td colspan="5" class="!py-8 text-center text-white-dark">
+                                No orders yet. <a routerLink="/pos" class="text-primary">Make your first sale</a>.
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6">
+            <div class="panel">
+                <h2 class="mb-4 text-lg font-semibold dark:text-white-light">Top products · 30 days</h2>
+                <ul class="space-y-4">
+                    @for (p of topProducts(); track p.productId; let i = $index) {
+                    <li class="flex items-center gap-3">
+                        <app-product-thumb [name]="p.name" [image]="p.image" [color]="p.color" />
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate font-semibold dark:text-white-light">{{ p.name }}</p>
+                            <p class="text-xs text-white-dark">{{ p.qty }} sold</p>
+                        </div>
+                        <span class="font-semibold">{{ p.revenue | money }}</span>
+                    </li>
+                    } @empty {
+                    <li class="text-white-dark">No sales in the last 30 days.</li>
+                    }
+                </ul>
+            </div>
+
+            <div class="panel">
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold dark:text-white-light">Stock alerts</h2>
+                    <a routerLink="/purchases/new" class="text-sm font-semibold text-primary hover:underline">Restock</a>
+                </div>
+                <ul class="space-y-3">
+                    @for (p of lowStock(); track p.id) {
+                    <li class="flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="truncate font-semibold dark:text-white-light">{{ p.name }}</p>
+                            <p class="text-xs text-white-dark">{{ p.sku }} · reorder at {{ p.reorderLevel }}</p>
+                        </div>
+                        <app-stock-badge [stock]="p.stock" [reorderLevel]="p.reorderLevel" [unit]="p.unit" />
+                    </li>
+                    } @empty {
+                    <li class="text-success">All products are well stocked.</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

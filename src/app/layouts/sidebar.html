@@ -1,0 +1,53 @@
+<div [ngClass]="{ 'dark text-white-dark': store.semidark }" class="print:hidden">
+    <nav class="sidebar fixed bottom-0 top-0 z-50 h-full min-h-screen w-[260px] shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] transition-all duration-300">
+        <div class="h-full bg-white dark:bg-[#0e1726]">
+            <div class="flex items-center justify-between px-4 py-3">
+                <a routerLink="/dashboard" class="main-logo flex shrink-0 items-center" aria-label="MOVA home">
+                    <img class="ml-[5px] w-8 flex-none" src="/assets/images/logo.svg" alt="" />
+                    <span
+                        class="align-middle text-2xl font-black tracking-[0.2em] dark:text-white-light lg:inline ltr:ml-2 rtl:mr-2"
+                        style="font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+                        >MO<span class="text-mova-cyan">V</span>A</span
+                    >
+                </a>
+                <button
+                    type="button"
+                    aria-label="Collapse sidebar"
+                    class="collapse-icon flex h-8 w-8 items-center rounded-full transition duration-300 hover:bg-gray-500/10 hover:text-primary dark:text-white-light dark:hover:bg-dark-light/10 rtl:rotate-180"
+                    (click)="storeData.dispatch({ type: 'toggleSidebar' })"
+                >
+                    <icon-carets-down class="m-auto rotate-90" />
+                </button>
+            </div>
+            <ng-scrollbar class="relative !h-[calc(100vh-80px)]" appearance="compact">
+                <ul class="relative space-y-0.5 p-4 py-0 font-semibold">
+                    @for (section of sections(); track section.title) {
+                    <h2 class="-mx-4 mb-1 flex items-center bg-white-light/30 px-7 py-3 font-extrabold uppercase dark:bg-dark dark:bg-opacity-[0.08]">
+                        <span>{{ section.title }}</span>
+                    </h2>
+                    <li class="nav-item">
+                        <ul>
+                            @for (item of section.items; track item.link) {
+                            <li class="nav-item">
+                                <a
+                                    [routerLink]="item.link"
+                                    class="group"
+                                    routerLinkActive="active"
+                                    [routerLinkActiveOptions]="{ exact: !!item.exact }"
+                                    (click)="toggleMobileMenu()"
+                                >
+                                    <div class="flex items-center">
+                                        <app-nav-icon [name]="item.icon" cls="h-5 w-5 shrink-0 group-hover:!text-primary" />
+                                        <span class="text-black dark:text-[#506690] dark:group-hover:text-white-dark ltr:pl-3 rtl:pr-3">{{ item.label }}</span>
+                                    </div>
+                                </a>
+                            </li>
+                            }
+                        </ul>
+                    </li>
+                    }
+                </ul>
+            </ng-scrollbar>
+        </div>
+    </nav>
+</div>

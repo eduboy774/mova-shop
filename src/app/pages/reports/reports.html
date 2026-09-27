@@ -1,0 +1,170 @@
+<app-page-header title="Reports" [crumbs]="[{ label: 'Insights' }, { label: 'Reports' }]">
+    <button type="button" class="btn btn-outline-primary gap-1.5" (click)="print()"><icon-printer class="h-4 w-4" /> Print</button>
+    <button type="button" class="btn btn-primary gap-1.5" (click)="exportCsv()"><icon-download class="h-4 w-4" /> Export CSV</button>
+</app-page-header>
+
+<div class="panel mb-6 flex flex-wrap items-center gap-3 print:hidden">
+    <div class="flex flex-wrap gap-2">
+        @for (p of presets; track p.value) {
+        <button type="button" class="btn btn-sm" [class]="preset() === p.value ? 'btn-primary' : 'btn-outline-primary'" (click)="preset.set(p.value)">
+            {{ p.label }}
+        </button>
+        }
+    </div>
+    @if (preset() === 'custom') {
+    <div class="flex items-center gap-2">
+        <input type="date" class="form-input form-input-sm w-auto" aria-label="From date" [ngModel]="customFrom()" (ngModelChange)="customFrom.set($event)" />
+        <span class="text-white-dark">to</span>
+        <input type="date" class="form-input form-input-sm w-auto" aria-label="To date" [ngModel]="customTo()" (ngModelChange)="customTo.set($event)" />
+    </div>
+    }
+    <span class="text-white-dark ltr:ml-auto rtl:mr-auto">{{ rangeLabel() }}</span>
+</div>
+
+<p class="mb-4 hidden text-lg font-bold print:block">Sales report · {{ rangeLabel() }}</p>
+
+<!-- KPIs -->
+<div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div class="panel">
+        <p class="text-xs uppercase text-white-dark">Gross sales</p>
+        <p class="mt-1 text-xl font-extrabold text-primary dark:text-[#b983e6]">{{ summary().grossSales | money }}</p>
+        <p class="text-xs text-white-dark">incl. {{ summary().tax | money }} tax</p>
+    </div>
+    <div class="panel">
+        <p class="text-xs uppercase text-white-dark">Gross profit</p>
+        <p class="mt-1 text-xl font-extrabold text-success">{{ summary().profit | money }}</p>
+        <p class="text-xs text-white-dark">{{ margin() | number: '1.0-1' }}% of net sales</p>
+    </div>
+    <div class="panel">
+        <p class="text-xs uppercase text-white-dark">Orders</p>
+        <p class="mt-1 text-xl font-extrabold">{{ summary().orders | number }}</p>
+        <p class="text-xs text-white-dark">{{ summary().itemsSold | number }} items · avg {{ summary().avgOrder | money }}</p>
+    </div>
+    <div class="panel">
+        <p class="text-xs uppercase text-white-dark">Discounts &amp; refunds</p>
+        <p class="mt-1 text-xl font-extrabold text-danger">{{ summary().discounts + summary().refundedAmount | money }}</p>
+        <p class="text-xs text-white-dark">{{ summary().refunds }} refunds · {{ summary().discounts | money }} discounts</p>
+    </div>
+</div>
+
+<div class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+    <div class="panel xl:col-span-2">
+        <h2 class="mb-2 text-lg font-semibold dark:text-white-light">Daily sales &amp; profit</h2>
+        <apx-chart
+            [series]="dailyChart().series"
+            [chart]="dailyChart().chart"
+            [colors]="dailyChart().colors"
+            [dataLabels]="dailyChart().dataLabels"
+            [stroke]="dailyChart().stroke"
+            [plotOptions]="dailyChart().plotOptions"
+            [xaxis]="dailyChart().xaxis"
+            [yaxis]="dailyChart().yaxis"
+            [grid]="dailyChart().grid"
+            [tooltip]="dailyChart().tooltip"
+            [legend]="dailyChart().legend"
+            [theme]="dailyChart().theme"
+        />
+    </div>
+    <div class="panel">
+        <h2 class="mb-2 text-lg font-semibold dark:text-white-light">Payment methods</h2>
+        @if (paymentTotal() > 0) {
+        <apx-chart
+            [series]="paymentChart().series"
+            [chart]="paymentChart().chart"
+            [labels]="paymentChart().labels"
+            [colors]="paymentChart().colors"
+            [dataLabels]="paymentChart().dataLabels"
+            [stroke]="paymentChart().stroke"
+            [legend]="paymentChart().legend"
+            [plotOptions]="paymentChart().plotOptions"
+            [tooltip]="paymentChart().tooltip"
+            [theme]="paymentChart().theme"
+        />
+        <ul class="mt-4 space-y-2 text-sm">
+            @for (p of payments(); track p.id) {
+            <li class="flex justify-between">
+                <span>{{ p.label }} <span class="text-white-dark">({{ p.count }})</span></span>
+                <span class="font-semibold">{{ p.value | money }}</span>
+            </li>
+            }
+        </ul>
+        } @else {
+        <div class="grid min-h-[300px] place-content-center text-white-dark">No sales in this period.</div>
+        }
+    </div>
+</div>
+
+<div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+    <div class="panel xl:col-span-2">
+        <h2 class="mb-4 text-lg font-semibold dark:text-white-light">Product performance</h2>
+        <div class="table-responsive max-h-[480px]">
+            <table class="table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th class="text-right">Qty sold</th>
+                        <th class="text-right">Revenue</th>
+                        <th class="text-right">Profit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (p of topProducts(); track p.productId; let i = $index) {
+                    <tr>
+                        <td class="text-white-dark">{{ i + 1 }}</td>
+                        <td>
+                            <span class="font-semibold">{{ p.name }}</span>
+                            <span class="block text-xs text-white-dark">{{ p.sku }}</span>
+                        </td>
+                        <td class="text-right">{{ p.qty | number }}</td>
+                        <td class="whitespace-nowrap text-right font-semibold">{{ p.revenue | money }}</td>
+                        <td class="whitespace-nowrap text-right text-success">{{ p.profit | money }}</td>
+                    </tr>
+                    } @empty {
+                    <tr>
+                        <td colspan="5" class="!py-10 text-center text-white-dark">No sales in this period.</td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        <div class="panel">
+            <h2 class="mb-4 text-lg font-semibold dark:text-white-light">By category</h2>
+            <ul class="space-y-4">
+                @for (c of categories(); track c.id) {
+                <li>
+                    <div class="mb-1 flex justify-between text-sm">
+                        <span class="font-semibold">{{ c.label }}</span>
+                        <span>{{ c.value | money }}</span>
+                    </div>
+                    <div class="h-2 w-full overflow-hidden rounded-full bg-[#ebedf2] dark:bg-dark/40">
+                        <div class="h-full rounded-full" [style.width.%]="pct(c.value, categoryTotal())" [style.background-color]="c.color"></div>
+                    </div>
+                </li>
+                } @empty {
+                <li class="text-white-dark">No sales in this period.</li>
+                }
+            </ul>
+        </div>
+
+        <div class="panel">
+            <h2 class="mb-4 text-lg font-semibold dark:text-white-light">By cashier</h2>
+            <ul class="space-y-3">
+                @for (c of cashiers(); track c.id) {
+                <li class="flex items-center justify-between text-sm">
+                    <span>
+                        <span class="font-semibold">{{ c.label }}</span>
+                        <span class="block text-xs text-white-dark">{{ c.count }} orders</span>
+                    </span>
+                    <span class="font-semibold">{{ c.value | money }}</span>
+                </li>
+                } @empty {
+                <li class="text-white-dark">No sales in this period.</li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>

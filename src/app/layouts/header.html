@@ -1,0 +1,247 @@
+<div class="z-40 shadow-sm print:hidden" [ngClass]="{ 'dark text-white-dark': store.semidark && store.menu === 'horizontal' }">
+    <div class="relative flex w-full items-center bg-white px-5 py-2.5 dark:bg-[#0e1726]">
+        <div class="horizontal-logo flex items-center justify-between lg:hidden ltr:mr-2 rtl:ml-2">
+            <a routerLink="/dashboard" class="main-logo flex shrink-0 items-center" aria-label="MOVA home">
+                <img class="inline w-8 ltr:-ml-1 rtl:-mr-1" src="/assets/images/logo.svg" alt="" />
+                <span
+                    class="hidden align-middle text-2xl font-black tracking-[0.2em] transition-all duration-300 dark:text-white-light md:inline ltr:ml-2 rtl:mr-2"
+                    style="font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+                    >MO<span class="text-mova-cyan">V</span>A</span
+                >
+            </a>
+
+            <button
+                type="button"
+                aria-label="Toggle menu"
+                class="collapse-icon flex flex-none rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:text-[#d0d2d6] dark:hover:bg-dark/60 dark:hover:text-primary lg:hidden ltr:ml-2 rtl:mr-2"
+                (click)="storeData.dispatch({ type: 'toggleSidebar' })"
+            >
+                <icon-menu class="h-5 w-5" />
+            </button>
+        </div>
+
+        <div class="hidden sm:block ltr:mr-2 rtl:ml-2">
+            <a routerLink="/pos" class="btn btn-primary btn-sm gap-1.5 rounded-full">
+                <icon-plus class="h-4 w-4" />
+                New Sale
+            </a>
+        </div>
+
+        <div
+            class="flex items-center space-x-1.5 dark:text-[#d0d2d6] sm:flex-1 lg:space-x-2 ltr:ml-auto ltr:sm:ml-0 rtl:mr-auto rtl:space-x-reverse sm:rtl:mr-0"
+        >
+            <div class="sm:ltr:mr-auto sm:rtl:ml-auto">
+                <form
+                    class="absolute inset-x-0 top-1/2 z-10 mx-4 hidden -translate-y-1/2 sm:relative sm:top-0 sm:mx-0 sm:block sm:translate-y-0"
+                    [ngClass]="{ '!block': search }"
+                    (ngSubmit)="submitSearch()"
+                >
+                    <div class="relative">
+                        <input
+                            type="search"
+                            name="q"
+                            [(ngModel)]="query"
+                            class="peer form-input bg-gray-100 placeholder:tracking-wide sm:bg-transparent ltr:pl-9 ltr:pr-9 ltr:sm:pr-4 rtl:pl-9 rtl:pr-9 rtl:sm:pl-4"
+                            [placeholder]="auth.isAdmin() ? 'Search products...' : 'Search orders...'"
+                            [attr.aria-label]="auth.isAdmin() ? 'Search products' : 'Search orders'"
+                        />
+                        <button
+                            type="submit"
+                            class="absolute inset-0 h-9 w-9 appearance-none peer-focus:text-primary ltr:right-auto rtl:left-auto"
+                            aria-label="Search"
+                        >
+                            <icon-search class="mx-auto" />
+                        </button>
+                        <button
+                            type="button"
+                            class="absolute top-1/2 block -translate-y-1/2 hover:opacity-80 sm:hidden ltr:right-2 rtl:left-2"
+                            aria-label="Close search"
+                            (click)="search = false"
+                        >
+                            <icon-x-circle />
+                        </button>
+                    </div>
+                </form>
+
+                <button
+                    type="button"
+                    aria-label="Open search"
+                    class="search_btn rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 sm:hidden"
+                    (click)="search = !search"
+                >
+                    <icon-search class="mx-auto h-4.5 w-4.5 dark:text-[#d0d2d6]" />
+                </button>
+            </div>
+
+            <div>
+                @if (store.theme === 'light') {
+                <button
+                    type="button"
+                    aria-label="Switch to dark theme"
+                    class="flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+                    (click)="storeData.dispatch({ type: 'toggleTheme', payload: 'dark' })"
+                >
+                    <icon-sun />
+                </button>
+                } @if (store.theme === 'dark') {
+                <button
+                    type="button"
+                    aria-label="Use system theme"
+                    class="flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+                    (click)="storeData.dispatch({ type: 'toggleTheme', payload: 'system' })"
+                >
+                    <icon-moon />
+                </button>
+                } @if (store.theme === 'system') {
+                <button
+                    type="button"
+                    aria-label="Switch to light theme"
+                    class="flex items-center rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+                    (click)="storeData.dispatch({ type: 'toggleTheme', payload: 'light' })"
+                >
+                    <icon-laptop />
+                </button>
+                }
+            </div>
+
+            @if (auth.isAdmin()) {
+            <div class="dropdown shrink-0">
+                <div hlMenu>
+                    <button
+                        type="button"
+                        hlMenuButton
+                        [attr.aria-label]="'Stock alerts: ' + lowStock().length"
+                        class="relative block rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+                    >
+                        <icon-bell-bing />
+                        @if (lowStock().length) {
+                        <span
+                            class="absolute -top-1 grid h-4 min-w-4 place-content-center rounded-full bg-danger px-1 text-[10px] font-bold text-white ltr:-right-1 rtl:-left-1"
+                            >{{ lowStock().length }}</span
+                        >
+                        }
+                    </button>
+                    <ul
+                        *hlMenuItems
+                        @toggleAnimation
+                        class="top-11 w-[300px] divide-y !py-0 text-dark dark:divide-white/10 dark:text-white-dark sm:w-[350px] ltr:-right-2 rtl:-left-2"
+                    >
+                        <li>
+                            <div class="flex items-center justify-between px-4 py-2 font-semibold">
+                                <h4 class="text-lg">Stock alerts</h4>
+                                @if (lowStock().length) {
+                                <span class="badge bg-danger/80">{{ lowStock().length }} items</span>
+                                }
+                            </div>
+                        </li>
+                        @for (p of lowStock().slice(0, 6); track p.id) {
+                        <li class="dark:text-white-light/90">
+                            <a
+                                *hlMenuItem="let menuItem"
+                                [routerLink]="['/inventory']"
+                                [queryParams]="{ q: p.sku }"
+                                class="!flex items-center justify-between gap-2 !px-4 !py-2"
+                            >
+                                <span class="truncate">
+                                    <span class="block truncate font-semibold">{{ p.name }}</span>
+                                    <span class="text-xs text-white-dark">{{ p.sku }} · reorder at {{ p.reorderLevel }}</span>
+                                </span>
+                                <app-stock-badge [stock]="p.stock" [reorderLevel]="p.reorderLevel" [unit]="p.unit" />
+                            </a>
+                        </li>
+                        } @empty {
+                        <li>
+                            <div class="!grid min-h-[160px] place-content-center text-center text-base hover:!bg-transparent">
+                                <div class="mx-auto mb-3 rounded-full text-success ring-4 ring-success/30">
+                                    <icon-info-circle [fill]="true" class="h-10 w-10" />
+                                </div>
+                                All products are well stocked.
+                            </div>
+                        </li>
+                        } @if (lowStock().length) {
+                        <li>
+                            <div class="p-4">
+                                <a
+                                    routerLink="/purchases/new"
+                                    *hlMenuItem="let menuItem"
+                                    class="btn btn-primary btn-sm !flex w-full justify-center !text-white hover:!bg-primary"
+                                    >Create purchase order</a
+                                >
+                            </div>
+                        </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+            }
+
+            <div class="dropdown shrink-0">
+                <div hlMenu class="!block">
+                    <button type="button" hlMenuButton class="group relative block" aria-label="Account menu">
+                        <span class="grid h-9 w-9 place-content-center rounded-full bg-primary text-sm font-bold text-white">{{ initials() }}</span>
+                    </button>
+                    <ul
+                        *hlMenuItems
+                        @toggleAnimation
+                        class="top-11 w-[240px] !py-0 font-semibold text-dark dark:text-white-dark dark:text-white-light/90 ltr:right-0 rtl:left-0"
+                    >
+                        <li>
+                            <div class="flex items-center px-4 py-4">
+                                <span class="grid h-10 w-10 flex-none place-content-center rounded-md bg-primary text-sm font-bold text-white"
+                                    >{{ initials() }}</span
+                                >
+                                <div class="truncate ltr:pl-4 rtl:pr-4">
+                                    <h4 class="truncate text-base">{{ auth.user()?.name }}</h4>
+                                    <span class="badge mt-0.5 capitalize" [class]="auth.isAdmin() ? 'badge-outline-primary' : 'badge-outline-info'"
+                                        >{{ auth.user()?.role }}</span
+                                    >
+                                    <p class="truncate text-xs font-normal text-black/60 dark:text-dark-light/60">{{ auth.user()?.email }}</p>
+                                </div>
+                            </div>
+                        </li>
+                        @if (auth.isAdmin()) {
+                        <li>
+                            <a routerLink="/settings" *hlMenuItem="let menuItem" class="dark:hover:text-white">
+                                <icon-settings class="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
+                                Settings
+                            </a>
+                        </li>
+                        }
+                        <li class="border-t border-white-light dark:border-white-light/10">
+                            <button type="button" *hlMenuItem="let menuItem" class="!py-3 text-danger" (click)="auth.logout()">
+                                <icon-logout class="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
+                                Sign Out
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- horizontal menu (used when the "Horizontal" layout is picked in the theme customizer) -->
+    <ul
+        class="horizontal-menu hidden border-t border-[#ebedf2] bg-white px-6 py-1.5 font-semibold text-black dark:border-[#191e3a] dark:bg-[#0e1726] dark:text-white-dark lg:space-x-1.5 xl:space-x-8 rtl:space-x-reverse"
+    >
+        @for (section of sections(); track section.title) {
+        <li class="menu nav-item relative" routerLinkActive #rla="routerLinkActive" [routerLinkActiveOptions]="{ exact: section.title === 'Main' }">
+            <a href="javascript:;" class="nav-link" [class.active]="rla.isActive">
+                <div class="flex items-center">
+                    <app-nav-icon [name]="section.items[0].icon" />
+                    <span class="px-2">{{ section.title }}</span>
+                </div>
+                <div class="right_arrow">
+                    <icon-caret-down />
+                </div>
+            </a>
+            <ul class="sub-menu">
+                @for (item of section.items; track item.link) {
+                <li>
+                    <a [routerLink]="item.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: !!item.exact }">{{ item.label }}</a>
+                </li>
+                }
+            </ul>
+        </li>
+        }
+    </ul>
+</div>

@@ -1,0 +1,221 @@
+<app-page-header title="Settings" [crumbs]="[{ label: 'Insights' }, { label: 'Settings' }]" />
+
+<div class="mb-5 flex flex-wrap gap-2 border-b border-white-light dark:border-[#191e3a]" role="tablist">
+    @for (t of tabs; track t.value) {
+    <button
+        type="button"
+        role="tab"
+        class="-mb-px border-b-2 px-4 py-2 font-semibold"
+        [class]="tab() === t.value ? 'border-primary text-primary' : 'border-transparent hover:text-primary'"
+        [attr.aria-selected]="tab() === t.value"
+        (click)="tab.set(t.value)"
+    >
+        {{ t.label }}
+    </button>
+    }
+</div>
+
+<!-- ============ Shop ============ -->
+@if (tab() === 'shop') {
+<form [formGroup]="shopForm" (ngSubmit)="saveShop()" class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <div class="panel space-y-5">
+        <h2 class="text-lg font-semibold dark:text-white-light">Shop profile</h2>
+        <p class="-mt-3 text-white-dark">Shown on receipts and in the footer.</p>
+        <div [class.has-error]="shopInvalid('name')">
+            <label for="shopName">Shop name *</label>
+            <input id="shopName" type="text" class="form-input" formControlName="name" />
+            @if (shopInvalid('name')) {
+            <p class="mt-1 text-danger">Shop name is required.</p>
+            }
+        </div>
+        <div>
+            <label for="tagline">Tagline</label>
+            <input id="tagline" type="text" class="form-input" formControlName="tagline" />
+        </div>
+        <div>
+            <label for="address">Address</label>
+            <input id="address" type="text" class="form-input" formControlName="address" />
+        </div>
+        <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+                <label for="phone">Phone</label>
+                <input id="phone" type="tel" class="form-input" formControlName="phone" />
+            </div>
+            <div [class.has-error]="shopInvalid('email')">
+                <label for="shopEmail">Email</label>
+                <input id="shopEmail" type="email" class="form-input" formControlName="email" />
+                @if (shopInvalid('email')) {
+                <p class="mt-1 text-danger">Enter a valid email.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="panel space-y-5">
+        <h2 class="text-lg font-semibold dark:text-white-light">Sales &amp; receipts</h2>
+        <div class="grid gap-5 sm:grid-cols-3">
+            <div>
+                <label for="currency">Currency</label>
+                <select id="currency" class="form-select" formControlName="currency">
+                    @for (c of currencies; track c) {
+                    <option [value]="c">{{ c }}</option>
+                    }
+                </select>
+            </div>
+            <div [class.has-error]="shopInvalid('taxRate')">
+                <label for="taxRate">Tax / VAT (%)</label>
+                <input id="taxRate" type="number" min="0" max="100" step="any" class="form-input" formControlName="taxRate" />
+                @if (shopInvalid('taxRate')) {
+                <p class="mt-1 text-danger">0 – 100</p>
+                }
+            </div>
+            <div [class.has-error]="shopInvalid('defaultReorderLevel')">
+                <label for="reorder">Default low-stock level</label>
+                <input id="reorder" type="number" min="0" step="1" class="form-input" formControlName="defaultReorderLevel" />
+            </div>
+        </div>
+        <p class="text-xs text-white-dark">Tax is added on top of prices at checkout. Changing it does not affect past orders.</p>
+        <div>
+            <label for="footer">Receipt footer</label>
+            <textarea id="footer" rows="3" class="form-textarea" formControlName="receiptFooter"></textarea>
+        </div>
+        <div class="flex justify-end">
+            <button type="submit" class="btn btn-primary">Save settings</button>
+        </div>
+    </div>
+</form>
+}
+
+<!-- ============ Users ============ -->
+@if (tab() === 'users') {
+<div class="panel">
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h2 class="text-lg font-semibold dark:text-white-light">Users</h2>
+            <p class="text-white-dark">Admins have full access. Cashiers can use the POS and see orders and customers.</p>
+        </div>
+        <button type="button" class="btn btn-primary gap-1.5" (click)="openUser()"><icon-plus class="h-4 w-4" /> Add user</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Added</th>
+                    <th class="w-px"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (u of users.users(); track u.id) {
+                <tr>
+                    <td class="font-semibold">
+                        {{ u.name }} @if (u.id === auth.user()?.id) {
+                        <span class="text-xs text-white-dark">(you)</span>
+                        }
+                    </td>
+                    <td>{{ u.email }}</td>
+                    <td><span class="badge capitalize" [class]="u.role === 'admin' ? 'badge-outline-primary' : 'badge-outline-info'">{{ u.role }}</span></td>
+                    <td>
+                        <span class="badge" [class]="u.active ? 'badge-outline-success' : 'badge-outline-danger'">{{ u.active ? 'Active' : 'Disabled' }}</span>
+                    </td>
+                    <td class="whitespace-nowrap">{{ u.createdAt | date: 'MMM d, y' }}</td>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <button type="button" class="hover:text-info" [attr.aria-label]="'Edit ' + u.name" (click)="openUser(u)">
+                                <icon-pencil class="h-5 w-5" />
+                            </button>
+                            @if (u.id !== auth.user()?.id) {
+                            <button type="button" class="hover:text-danger" [attr.aria-label]="'Delete ' + u.name" (click)="deleteUser(u)">
+                                <icon-trash-lines class="h-5 w-5" />
+                            </button>
+                            }
+                        </div>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+}
+
+<!-- ============ Data ============ -->
+@if (tab() === 'data') {
+<div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <div class="panel">
+        <h2 class="mb-1 text-lg font-semibold dark:text-white-light">Stored data</h2>
+        <p class="mb-4 text-white-dark">Everything is saved in this browser ({{ storageSize() }}). Export backups regularly.</p>
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            @for (c of counts(); track c.label) {
+            <div class="rounded-md border border-white-light p-3 dark:border-[#1b2e4b]">
+                <p class="text-xl font-bold">{{ c.value }}</p>
+                <p class="text-xs text-white-dark">{{ c.label }}</p>
+            </div>
+            }
+        </div>
+    </div>
+
+    <div class="panel space-y-5">
+        <div>
+            <h2 class="text-lg font-semibold dark:text-white-light">Backup &amp; restore</h2>
+            <p class="text-white-dark">Download a JSON backup, or restore one to move data to another computer.</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary" (click)="exportBackup()">Export backup</button>
+                <label class="btn btn-outline-primary mb-0 cursor-pointer">
+                    Restore backup…
+                    <input type="file" accept="application/json,.json" class="sr-only" (change)="importBackup($event)" />
+                </label>
+            </div>
+        </div>
+        <div class="border-t border-white-light pt-5 dark:border-[#1b2e4b]">
+            <h2 class="text-lg font-semibold text-danger">Danger zone</h2>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-warning" (click)="resetDemo()">Reload demo data</button>
+                <button type="button" class="btn btn-outline-danger" (click)="clearData()">Start with an empty shop</button>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+<app-modal [open]="showUserForm()" [title]="editingUser() ? 'Edit user' : 'Add user'" (closed)="showUserForm.set(false)">
+    <form [formGroup]="userForm" (ngSubmit)="saveUser()" class="space-y-4">
+        <div [class.has-error]="userSubmitted() && userForm.controls.name.invalid">
+            <label for="uName">Full name *</label>
+            <input id="uName" type="text" class="form-input" formControlName="name" />
+        </div>
+        <div [class.has-error]="userSubmitted() && userForm.controls.email.invalid">
+            <label for="uEmail">Email *</label>
+            <input id="uEmail" type="email" class="form-input" formControlName="email" autocomplete="off" />
+        </div>
+        <div>
+            <label for="uPassword">{{ editingUser() ? 'New password (leave blank to keep)' : 'Password *' }}</label>
+            <input id="uPassword" type="password" class="form-input" formControlName="password" autocomplete="new-password" />
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+                <label for="uRole">Role</label>
+                <select id="uRole" class="form-select" formControlName="role">
+                    <option value="cashier">Cashier</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <label class="mb-0 mt-7 flex cursor-pointer items-center gap-2">
+                <input type="checkbox" class="form-checkbox" formControlName="active" />
+                <span>Account active</span>
+            </label>
+        </div>
+        @if (userSubmitted() && userForm.invalid) {
+        <p class="text-danger">Name and a valid email are required.</p>
+        } @if (userError()) {
+        <p class="text-danger">{{ userError() }}</p>
+        }
+        <div class="flex justify-end gap-2 pt-2">
+            <button type="button" class="btn btn-outline-danger" (click)="showUserForm.set(false)">Cancel</button>
+            <button type="submit" class="btn btn-primary">{{ editingUser() ? 'Save changes' : 'Add user' }}</button>
+        </div>
+    </form>
+</app-modal>

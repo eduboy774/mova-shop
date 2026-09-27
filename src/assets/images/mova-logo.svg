@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 300" fill="none">
+    <g>
+        <circle cx="150" cy="150" r="133" stroke="#00b4d8" stroke-width="26" />
+        <circle cx="150" cy="110" r="40" fill="#f72585" />
+        <rect x="137" y="140" width="26" height="36" fill="#f72585" />
+        <path d="M150 111 L183 156 L117 156 Z" fill="#1c1c1c" />
+        <rect x="141.5" y="155" width="17" height="60" fill="#1c1c1c" />
+    </g>
+    <text x="350" y="165" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="170" letter-spacing="110">
+        <tspan fill="#1c1c1c">MO</tspan><tspan fill="#00b4d8">V</tspan><tspan fill="#1c1c1c">A</tspan>
+    </text>
+    <text x="352" y="255" font-family="'Arial', 'Helvetica Neue', sans-serif" font-weight="700" font-size="46" letter-spacing="14" fill="#7209b7">MARKETPLACE OF VALUE &amp; ACCESS</text>
+</svg>

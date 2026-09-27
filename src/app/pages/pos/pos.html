@@ -1,0 +1,316 @@
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
+    <!-- ================= Catalog ================= -->
+    <section class="panel flex h-[70vh] flex-col lg:h-[calc(100vh-150px)]" aria-label="Products">
+        <div class="relative">
+            <input
+                #searchInput
+                type="search"
+                autofocus
+                class="form-input ps-11 py-3 text-base"
+                placeholder="Scan barcode, type SKU or search products…"
+                aria-label="Scan barcode or search products"
+                [ngModel]="search()"
+                (ngModelChange)="search.set($event)"
+                (keydown.enter)="onSearchEnter()"
+            />
+            <span class="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-white-dark"><icon-search /></span>
+        </div>
+
+        <div class="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-2" role="tablist" aria-label="Categories">
+            <button
+                type="button"
+                role="tab"
+                class="btn btn-sm shrink-0 rounded-full"
+                [class]="categoryId() === 'all' ? 'btn-primary' : 'btn-outline-primary'"
+                [attr.aria-selected]="categoryId() === 'all'"
+                (click)="categoryId.set('all')"
+            >
+                All
+            </button>
+            @for (c of categories(); track c.id) {
+            <button
+                type="button"
+                role="tab"
+                class="btn btn-sm shrink-0 rounded-full"
+                [class]="categoryId() === c.id ? 'btn-primary' : 'btn-outline-primary'"
+                [attr.aria-selected]="categoryId() === c.id"
+                (click)="categoryId.set(c.id)"
+            >
+                {{ c.name }}
+            </button>
+            }
+        </div>
+
+        <div class="mt-3 flex-1 overflow-y-auto pe-1">
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                @for (p of visibleProducts(); track p.id) {
+                <button
+                    type="button"
+                    class="group relative flex flex-col overflow-hidden rounded-lg border border-white-light bg-white text-left transition hover:border-primary hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#1b2e4b] dark:bg-[#0e1726] dark:hover:border-primary"
+                    [disabled]="p.stock <= 0"
+                    [attr.aria-label]="'Add ' + p.name"
+                    (click)="add(p)"
+                >
+                    <div class="aspect-[4/3] w-full overflow-hidden bg-white-light/40 dark:bg-[#1b2e4b]">
+                        <app-product-thumb [name]="p.name" [image]="p.image" [color]="categoryMap().get(p.categoryId)?.color" size="lg" />
+                    </div>
+                    <div class="flex flex-1 flex-col p-2.5">
+                        <span class="line-clamp-2 text-[13px] font-semibold leading-tight text-black dark:text-white-light">{{ p.name }}</span>
+                        <span class="mt-auto flex items-end justify-between gap-1 pt-2">
+                            <span class="font-bold text-primary dark:text-[#b983e6]">{{ p.price | money }}</span>
+                            <span class="text-[11px]" [class]="p.stock <= 0 ? 'text-danger' : p.stock <= p.reorderLevel ? 'text-warning' : 'text-white-dark'">
+                                {{ p.stock <= 0 ? 'Out' : p.stock + ' left' }}
+                            </span>
+                        </span>
+                    </div>
+                    @if (qtyInCart(p.id)) {
+                    <span class="absolute end-2 top-2 grid h-6 min-w-6 place-content-center rounded-full bg-primary px-1.5 text-xs font-bold text-white shadow"
+                        >{{ qtyInCart(p.id) }}</span
+                    >
+                    }
+                </button>
+                } @empty {
+                <div class="col-span-full py-16 text-center text-white-dark">No products match your search.</div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= Cart ================= -->
+    <section #cartPanel class="panel flex scroll-mt-20 flex-col p-0 lg:h-[calc(100vh-150px)]" aria-label="Current sale">
+        <div class="border-b border-white-light p-4 dark:border-[#1b2e4b]">
+            <div class="mb-3 flex items-center justify-between">
+                <h2 class="flex items-center gap-2 text-lg font-bold dark:text-white-light">
+                    <icon-shopping-cart class="h-5 w-5" /> Current sale @if (itemCount()) {
+                    <span class="badge bg-primary">{{ itemCount() }}</span>
+                    }
+                </h2>
+                <button
+                    type="button"
+                    class="text-sm font-semibold text-danger hover:underline disabled:opacity-40"
+                    [disabled]="!cart().length"
+                    (click)="clearCart()"
+                >
+                    Clear
+                </button>
+            </div>
+            <div class="flex gap-2">
+                <select class="form-select flex-1" aria-label="Customer" [ngModel]="customerId()" (ngModelChange)="customerId.set($event)">
+                    <option value="">Walk-in Customer</option>
+                    @for (c of customers.customers(); track c.id) {
+                    <option [value]="c.id">{{ c.name }} · {{ c.phone }}</option>
+                    }
+                </select>
+                <button type="button" class="btn btn-outline-primary px-3" aria-label="Add new customer" title="Add new customer" (click)="openCustomerModal()">
+                    <icon-user-plus class="h-5 w-5" />
+                </button>
+            </div>
+        </div>
+
+        <div class="min-h-[160px] flex-1 overflow-y-auto p-4">
+            @for (line of lines(); track line.productId) {
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-white-light py-3 first:pt-0 last:border-0 dark:border-[#1b2e4b]">
+                <div class="min-w-[150px] flex-1">
+                    <p class="truncate font-semibold text-black dark:text-white-light">{{ line.product.name }}</p>
+                    <p class="text-xs text-white-dark">{{ line.product.price | money }} · {{ line.product.stock }} in stock</p>
+                </div>
+                <div class="flex items-center rounded-md border border-white-light dark:border-[#1b2e4b]">
+                    <button
+                        type="button"
+                        class="p-1.5 hover:text-primary"
+                        [attr.aria-label]="'Decrease ' + line.product.name"
+                        (click)="setQty(line.productId, line.qty - 1)"
+                    >
+                        <icon-minus class="h-4 w-4" />
+                    </button>
+                    <input
+                        type="number"
+                        min="1"
+                        [max]="line.product.stock"
+                        class="w-11 border-0 bg-transparent p-0 text-center font-semibold focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                        [attr.aria-label]="'Quantity of ' + line.product.name"
+                        [ngModel]="line.qty"
+                        (change)="setQty(line.productId, $any($event.target).value)"
+                    />
+                    <button type="button" class="p-1.5 hover:text-primary" [attr.aria-label]="'Increase ' + line.product.name" (click)="add(line.product)">
+                        <icon-plus class="h-4 w-4" />
+                    </button>
+                </div>
+                <span class="w-20 text-right font-semibold">{{ line.product.price * line.qty | money }}</span>
+                <button
+                    type="button"
+                    class="text-white-dark hover:text-danger"
+                    [attr.aria-label]="'Remove ' + line.product.name"
+                    (click)="remove(line.productId)"
+                >
+                    <icon-trash-lines class="h-5 w-5" />
+                </button>
+            </div>
+            } @empty {
+            <div class="grid h-full place-content-center py-10 text-center text-white-dark">
+                <icon-shopping-cart class="mx-auto mb-3 h-12 w-12 opacity-40" />
+                <p class="font-semibold">Cart is empty</p>
+                <p class="text-xs">Tap a product or scan a barcode to start a sale.</p>
+            </div>
+            }
+        </div>
+
+        <div class="border-t border-white-light p-4 dark:border-[#1b2e4b]">
+            <div class="mb-3 flex items-center gap-2">
+                <label for="discount" class="mb-0 shrink-0 text-sm">Discount</label>
+                <input
+                    id="discount"
+                    type="number"
+                    min="0"
+                    class="form-input form-input-sm flex-1"
+                    [ngModel]="discountValue()"
+                    (ngModelChange)="discountValue.set($event)"
+                    [disabled]="!cart().length"
+                />
+                <div class="flex overflow-hidden rounded-md border border-white-light dark:border-[#1b2e4b]">
+                    <button
+                        type="button"
+                        class="px-3 py-1 text-sm font-semibold"
+                        [class]="discountType() === 'amount' ? 'bg-primary text-white' : ''"
+                        [attr.aria-pressed]="discountType() === 'amount'"
+                        (click)="discountType.set('amount')"
+                    >
+                        {{ settings.currency() }}
+                    </button>
+                    <button
+                        type="button"
+                        class="px-3 py-1 text-sm font-semibold"
+                        [class]="discountType() === 'percent' ? 'bg-primary text-white' : ''"
+                        [attr.aria-pressed]="discountType() === 'percent'"
+                        (click)="discountType.set('percent')"
+                    >
+                        %
+                    </button>
+                </div>
+            </div>
+
+            <dl class="space-y-1.5 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-white-dark">Subtotal</dt>
+                    <dd>{{ totals().subtotal | money }}</dd>
+                </div>
+                @if (totals().discount) {
+                <div class="flex justify-between text-success">
+                    <dt>Discount</dt>
+                    <dd>-{{ totals().discount | money }}</dd>
+                </div>
+                }
+                <div class="flex justify-between">
+                    <dt class="text-white-dark">Tax ({{ settings.settings().taxRate }}%)</dt>
+                    <dd>{{ totals().tax | money }}</dd>
+                </div>
+                <div
+                    class="flex justify-between border-t border-dashed border-white-light pt-2 text-lg font-extrabold text-black dark:border-[#1b2e4b] dark:text-white-light"
+                >
+                    <dt>Total</dt>
+                    <dd>{{ totals().total | money }}</dd>
+                </div>
+            </dl>
+
+            <button type="button" class="btn btn-gradient mt-4 w-full border-0 py-3 text-base uppercase" [disabled]="!cart().length" (click)="openPayment()">
+                Charge {{ totals().total | money }}
+            </button>
+        </div>
+    </section>
+</div>
+
+<!-- floating cart bar on phones/tablets -->
+@if (cart().length) {
+<button
+    type="button"
+    class="btn btn-gradient fixed inset-x-4 bottom-4 z-40 justify-between border-0 py-3 shadow-lg lg:hidden"
+    (click)="cartPanel.scrollIntoView({ behavior: 'smooth' })"
+>
+    <span class="flex items-center gap-2"><icon-shopping-cart class="h-5 w-5" /> View cart ({{ itemCount() }})</span>
+    <span class="font-extrabold">{{ totals().total | money }}</span>
+</button>
+}
+
+<!-- ================= Payment ================= -->
+<app-modal [open]="showPayment()" title="Payment" size="md" (closed)="showPayment.set(false)">
+    <div class="mb-5 rounded-lg bg-primary-light p-4 text-center dark:bg-primary-dark-light">
+        <p class="text-sm text-primary dark:text-[#b983e6]">Amount due</p>
+        <p class="text-3xl font-extrabold text-primary dark:text-white">{{ totals().total | money }}</p>
+    </div>
+
+    <p class="mb-2 font-semibold">Payment method</p>
+    <div class="mb-5 grid grid-cols-2 gap-2">
+        @for (m of paymentMethods; track m.value) {
+        <button
+            type="button"
+            class="btn"
+            [class]="paymentMethod() === m.value ? 'btn-primary' : 'btn-outline-primary'"
+            [attr.aria-pressed]="paymentMethod() === m.value"
+            (click)="paymentMethod.set(m.value); amountPaid.set(totals().total)"
+        >
+            {{ m.label }}
+        </button>
+        }
+    </div>
+
+    @if (paymentMethod() === 'cash') {
+    <label for="amountPaid">Cash received</label>
+    <input
+        id="amountPaid"
+        type="number"
+        min="0"
+        step="any"
+        class="form-input text-lg font-bold"
+        [ngModel]="amountPaid()"
+        (ngModelChange)="amountPaid.set($event)"
+        (keydown.enter)="completeSale()"
+    />
+    <div class="mt-2 flex flex-wrap gap-2">
+        @for (a of quickAmounts(); track a; let first = $first) {
+        <button type="button" class="btn btn-outline-dark btn-sm" (click)="amountPaid.set(a)">{{ first ? 'Exact' : (a | money) }}</button>
+        }
+    </div>
+    <div class="mt-4 flex items-center justify-between rounded-lg border border-white-light p-3 dark:border-[#1b2e4b]">
+        <span class="font-semibold">Change</span>
+        <span class="text-xl font-extrabold" [class]="canComplete() ? 'text-success' : 'text-danger'">
+            {{ canComplete() ? (change() | money) : 'Not enough cash' }}
+        </span>
+    </div>
+    }
+
+    <label for="note" class="mt-4">Note (optional)</label>
+    <input id="note" type="text" class="form-input" placeholder="e.g. delivery, reference number" [ngModel]="note()" (ngModelChange)="note.set($event)" />
+
+    <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="btn btn-outline-danger" (click)="showPayment.set(false)">Cancel</button>
+        <button type="button" class="btn btn-success" [disabled]="!canComplete()" (click)="completeSale()">Complete sale</button>
+    </div>
+</app-modal>
+
+<!-- ================= Receipt ================= -->
+<app-modal [open]="!!lastOrder()" title="Sale completed" size="md" (closed)="newSale()">
+    @if (lastOrder(); as order) {
+    <app-receipt [order]="order" />
+    <div class="mt-5 flex justify-end gap-2">
+        <button type="button" class="btn btn-outline-primary gap-1.5" (click)="print()"><icon-printer class="h-4 w-4" /> Print receipt</button>
+        <button type="button" class="btn btn-primary" (click)="newSale()">New sale</button>
+    </div>
+    }
+</app-modal>
+
+<!-- ================= Quick add customer ================= -->
+<app-modal [open]="showCustomerModal()" title="Add customer" size="sm" (closed)="showCustomerModal.set(false)">
+    <form (ngSubmit)="saveCustomer()">
+        <label for="cName">Name</label>
+        <input id="cName" name="name" type="text" class="form-input" [(ngModel)]="newCustomer.name" required />
+        <label for="cPhone" class="mt-4">Phone</label>
+        <input id="cPhone" name="phone" type="tel" class="form-input" [(ngModel)]="newCustomer.phone" required />
+        @if (customerError) {
+        <p class="mt-3 text-danger">{{ customerError }}</p>
+        }
+        <div class="mt-6 flex justify-end gap-2">
+            <button type="button" class="btn btn-outline-danger" (click)="showCustomerModal.set(false)">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save customer</button>
+        </div>
+    </form>
+</app-modal>
